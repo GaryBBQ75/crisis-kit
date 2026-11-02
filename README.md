@@ -45,7 +45,7 @@ npm run cap:add:android   # une seule fois, crée le projet Android
 npm run cap:sync     # build puis copie dans les projets natifs
 ```
 
-État actuel : squelette V0 fonctionnel, hors ligne grâce au service worker et à IndexedDB. Écrans présents : accueil, mon foyer, checklist avec péremptions, fiches réflexes, plan familial, premiers secours. La carte, les rappels par notification et le téléchargement de packs sont à venir.
+État actuel : squelette V0 fonctionnel, hors ligne grâce au service worker et à IndexedDB. Écrans présents : accueil, mon foyer, checklist avec péremptions, fiches réflexes, plan familial, premiers secours. Rappels de péremption par notification locale (30 et 7 jours avant) dans l'app Android et iOS. La carte et le téléchargement de packs sont à venir.
 
 ## Avertissement
 

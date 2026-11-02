@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { buildChecklist, pack } from '../pack';
+import { programmerRappels, rappelsDisponibles } from '../reminders';
 import { defaultProfile, usePersisted, type Inventory, type Profile } from '../store';
 
 function statut(peremption?: string): 'expire' | 'bientot' | null {
@@ -14,9 +16,18 @@ function statut(peremption?: string): 'expire' | 'bientot' | null {
 export default function Checklist() {
   const [profile, , profileReady] = usePersisted<Profile>('profile', defaultProfile);
   const [inventory, setInventory, ready] = usePersisted<Inventory>('inventory', {});
+  const items = buildChecklist(pack, profile);
+
+  useEffect(() => {
+    if (!ready || !profileReady) return;
+    programmerRappels(items.map((i) => ({ id: i.id, nom: i.nom, peremption: inventory[i.id]?.peremption }))).catch(
+      () => {},
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, profileReady, inventory, profile]);
+
   if (!ready || !profileReady) return null;
 
-  const items = buildChecklist(pack, profile);
   const done = items.filter((i) => inventory[i.id]?.checked).length;
 
   const patch = (id: string, change: Partial<Inventory[string]>) => {
@@ -60,6 +71,12 @@ export default function Checklist() {
           );
         })}
       </ul>
+      {!rappelsDisponibles && (
+        <p className="muted small">
+          Les rappels de péremption par notification fonctionnent dans l'app Android et iOS. Ici, les produits à
+          renouveler sont seulement signalés dans la liste.
+        </p>
+      )}
       {pack.note && <p className="muted small">{pack.note}</p>}
     </>
   );
