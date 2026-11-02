@@ -35,6 +35,18 @@ Le dossier `data/` contient le format des packs et un premier pack France. Le d�
 - Cartes : MapLibre et fichiers PMTiles, données OpenStreetMap
 - Hébergement des packs : serveur OVH, fichiers statiques
 
+## Démarrer
+
+```
+npm install
+npm run dev          # développement
+npm run build        # compile et construit dist/
+npm run cap:add:android   # une seule fois, crée le projet Android
+npm run cap:sync     # build puis copie dans les projets natifs
+```
+
+État actuel : squelette V0 fonctionnel, hors ligne grâce au service worker et à IndexedDB. Écrans présents : accueil, mon foyer, checklist avec péremptions, fiches réflexes, plan familial, premiers secours. La carte, les rappels par notification et le téléchargement de packs sont à venir.
+
 ## Avertissement
 
 Cette app ne remplace pas les consignes officielles et n'est pas une application gouvernementale. Chaque recommandation affiche sa source.
