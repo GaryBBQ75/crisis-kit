@@ -1,0 +1,34 @@
+{
+  "pays": "FR",
+  "langue": "fr",
+  "version": "2026-11-02",
+  "urgences": [
+    { "nom": "Urgence Europe", "numero": "112" },
+    { "nom": "SAMU", "numero": "15" },
+    { "nom": "Police et gendarmerie", "numero": "17" },
+    { "nom": "Pompiers", "numero": "18" }
+  ],
+  "alerte": {
+    "systeme": "FR-Alert",
+    "type": "cell-broadcast",
+    "installation_requise": false,
+    "info": "https://www.info.gouv.fr/actualite/fr-alert-comment-ca-marche"
+  },
+  "autonomie_heures": 72,
+  "provisions": [
+    { "id": "eau", "nom": "Eau", "quantite_par_personne_jour": 2, "unite": "L" },
+    { "id": "nourriture", "nom": "Nourriture non périssable", "jours": 3 },
+    { "id": "radio", "nom": "Radio à piles ou à manivelle" },
+    { "id": "lampe", "nom": "Lampe et piles" },
+    { "id": "batterie", "nom": "Batterie externe" },
+    { "id": "especes", "nom": "Espèces" },
+    { "id": "papiers", "nom": "Papiers en pochette étanche" },
+    { "id": "medicaments", "nom": "Médicaments habituels" },
+    { "id": "allumettes", "nom": "Allumettes" }
+  ],
+  "sources": [
+    { "titre": "Stratégie européenne de préparation (72 h d'autonomie)", "url": "" },
+    { "titre": "Guide officiel du gouvernement français", "url": "" }
+  ],
+  "note": "Valeurs de départ à vérifier avec les sources officielles avant publication."
+}
