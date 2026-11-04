@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BookOpen, ExternalLink, WifiOff } from "lucide-react";
+import { Pictogram, guideIcons } from "../components/Pictogram";
 import { reflexes } from "../content/reflexes";
 export default function Reflexes() {
   const [search, setSearch] = useState("");
@@ -17,12 +18,19 @@ export default function Reflexes() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">RETROUVER LES BONS REPÈRES</p>
-          <h2>Fiches réflexes</h2>
+          <h2>Le guide de terrain.</h2>
           <p className="muted">
-            Des repères courts, disponibles dans l’application.
+            Préparation & survie · des repères simples à garder avec soi.
           </p>
         </div>
-        <BookOpen />
+        <span className="page-stamp">
+          <BookOpen />
+          <small>
+            GUIDE
+            <br />
+            DE TERRAIN
+          </small>
+        </span>
       </div>
       <div className="notice">
         <WifiOff size={15} /> Contenu embarqué · les liens sources nécessitent
@@ -51,6 +59,7 @@ export default function Reflexes() {
         {visible.map((r) => (
           <details key={r.id} className="card">
             <summary>
+              <Pictogram icon={guideIcons[r.id] || BookOpen} tone="orange" />
               {r.titre}
               <span
                 className="event-meta"
@@ -71,7 +80,7 @@ export default function Reflexes() {
               </>
             )}
             <h3>Pendant · premiers repères</h3>
-            <ol>
+            <ol className="guide-steps">
               {r.pendant.map((t) => (
                 <li key={t}>{t}</li>
               ))}

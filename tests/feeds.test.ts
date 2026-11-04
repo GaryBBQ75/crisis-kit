@@ -89,3 +89,36 @@ test("download area remains small and within map bounds", () => {
   assert.throws(() => localBounds({ lat: 90, lon: 0 }));
   assert.ok(localBounds({ lat: 0, lon: 180 }).split(",").map(Number)[2] <= 180);
 });
+test("local places retain categories and contact metadata, including healthcare-only hospitals", () => {
+  const { pois } = parseLocalMap({
+    elements: [
+      {
+        type: "node",
+        id: 4,
+        lat: 48,
+        lon: 2,
+        tags: {
+          healthcare: "hospital",
+          name: "Hôpital test",
+          "addr:street": "Rue test",
+          phone: "+33 1 23 45 67 89",
+          emergency: "yes",
+        },
+      },
+      {
+        type: "node",
+        id: 5,
+        lat: 48,
+        lon: 2,
+        tags: { amenity: "drinking_water" },
+      },
+    ],
+  });
+  assert.equal(pois[0].category, "health");
+  assert.equal(pois[0].address, "Rue test");
+  assert.equal(pois[0].emergency, "yes");
+  assert.equal(pois[1].category, "water");
+  const big = localBounds({ lat: 48, lon: 2 }).split(",").map(Number),
+    small = localBounds({ lat: 48, lon: 2 }, 0.5).split(",").map(Number);
+  assert.ok(small[2] - small[0] < big[2] - big[0]);
+});

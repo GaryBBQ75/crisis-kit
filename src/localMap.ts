@@ -1,7 +1,17 @@
 import type { Position } from "./feeds";
-export type POI = Position & { id: string; name: string; kind: string };
+export type POI = Position & {
+  id: string;
+  name: string;
+  kind: string;
+  category?: string;
+  address?: string;
+  phone?: string;
+  hours?: string;
+  access?: string;
+  emergency?: string;
+};
 export type Road = { name: string; points: [number, number][] };
-export function localBounds(p: Position) {
+export function localBounds(p: Position, radiusKm = 1) {
   if (
     !Number.isFinite(p.lat) ||
     !Number.isFinite(p.lon) ||
@@ -9,7 +19,7 @@ export function localBounds(p: Position) {
     Math.abs(p.lon) > 180
   )
     throw Error("Zone hors couverture");
-  const dy = 1 / 111.32,
+  const dy = radiusKm / 111.32,
     dx = Math.min(0.1, dy / Math.cos((p.lat * Math.PI) / 180));
   return [
     Math.max(-180, p.lon - dx),
@@ -55,15 +65,47 @@ export function parseLocalMap(d: any): { pois: POI[]; roads: Road[] } {
           : [];
     if (e.tags?.highway && points.length > 1)
       roads.push({ name: String(e.tags.name || ""), points });
+    const healthcare = e.tags?.healthcare;
     const kind =
       e.tags?.emergency === "defibrillator"
         ? "Défibrillateur"
-        : names[e.tags?.amenity];
+        : names[e.tags?.amenity] ||
+          (healthcare === "hospital"
+            ? "Hôpital"
+            : healthcare === "clinic"
+              ? "Centre de soins"
+              : undefined);
     if (kind && points.length) {
       pois.push({
         id: e.type + e.id,
         name: String(e.tags.name || kind),
         kind,
+        category:
+          e.tags?.emergency === "defibrillator"
+            ? "aed"
+            : e.tags?.amenity === "drinking_water"
+              ? "water"
+              : e.tags?.amenity === "pharmacy"
+                ? "pharmacy"
+                : e.tags?.amenity === "shelter"
+                  ? "shelter"
+                  : e.tags?.amenity === "toilets"
+                    ? "toilets"
+                    : ["police", "fire_station"].includes(e.tags?.amenity)
+                      ? "rescue"
+                      : "health",
+        address: [
+          e.tags?.["addr:housenumber"],
+          e.tags?.["addr:street"],
+          e.tags?.["addr:postcode"],
+          e.tags?.["addr:city"],
+        ]
+          .filter(Boolean)
+          .join(" "),
+        phone: e.tags?.phone || e.tags?.["contact:phone"],
+        hours: e.tags?.opening_hours,
+        access: e.tags?.access,
+        emergency: e.tags?.emergency,
         lat: points.reduce((s, p) => s + p[0], 0) / points.length,
         lon: points.reduce((s, p) => s + p[1], 0) / points.length,
       });

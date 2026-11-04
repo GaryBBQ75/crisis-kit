@@ -25,6 +25,7 @@ import EventDetail from "./components/EventDetail";
 import { useFeeds } from "./useFeeds";
 import { usePersisted } from "./store";
 import type { Incident, Position } from "./feeds";
+import type { POICategory } from "./components/Pictogram";
 export type Screen =
   | "home"
   | "situation"
@@ -41,7 +42,7 @@ const navigation = [
   { id: "situation", label: "Situation", icon: Globe },
   { id: "map", label: "Carte", icon: Map },
   { id: "prepare", label: "Préparation", icon: Backpack },
-  { id: "reflexes", label: "Fiches réflexes", icon: BookOpen },
+  { id: "reflexes", label: "Guide de survie", icon: BookOpen },
 ];
 const titles: Partial<Record<Screen, string>> = {
   profile: "Mon foyer",
@@ -66,11 +67,15 @@ export default function App() {
   const feedState = useFeeds(economy || offlineTest);
   const state = { ...feedState, online: feedState.online && !offlineTest };
   const [selected, select] = useState<Incident | null>(null);
+  const [mapCategory, setMapCategory] = useState<POICategory | "all">("all");
   const [focus, setFocus] = useState<Position | null>(null);
   function go(s: Screen) {
     setScreen(s);
     window.scrollTo({ top: 0 });
-    if (s === "map") setFocus(null);
+    if (s === "map") {
+      setFocus(null);
+      setMapCategory("all");
+    }
   }
   useEffect(() => {
     document.title =
@@ -116,7 +121,7 @@ export default function App() {
             <span className="status-dot" /> Vos préparatifs restent sur cet
             appareil
           </p>
-          <small>Version de travail · 0.2</small>
+          <small>Version de travail · 0.3</small>
         </div>
       </aside>
       <div className="workspace">
@@ -177,6 +182,10 @@ export default function App() {
           {screen === "home" && (
             <Dashboard
               go={go}
+              openResources={(category) => {
+                go("map");
+                setMapCategory(category);
+              }}
               state={state}
               position={position}
               onSelect={select}
@@ -187,6 +196,7 @@ export default function App() {
           )}
           {screen === "map" && (
             <MapScreen
+              initialCategory={mapCategory}
               events={state.events}
               position={position}
               setPosition={setPosition}
@@ -227,7 +237,7 @@ export default function App() {
             <n.icon size={20} />
             <span>
               {n.id === "reflexes"
-                ? "Réflexes"
+                ? "Guide"
                 : n.id === "prepare"
                   ? "Mon kit"
                   : n.label}

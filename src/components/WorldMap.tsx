@@ -1,5 +1,8 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { poiCategory, poiCategories } from "./Pictogram";
 import "leaflet/dist/leaflet.css";
 import { colors, type Incident, type Position } from "../feeds";
 import type { POI, Road } from "../localMap";
@@ -13,6 +16,8 @@ export default function WorldMap({
   roads = [],
   compact = false,
   choose,
+  onPOISelect,
+  resourceView = false,
 }: {
   events: Incident[];
   position: Position | null;
@@ -23,11 +28,15 @@ export default function WorldMap({
   roads?: Road[];
   compact?: boolean;
   choose?: (p: Position) => void;
+  onPOISelect?: (p: POI) => void;
+  resourceView?: boolean;
 }) {
   const el = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
     callback = useRef(onSelect),
     chooser = useRef(choose);
+  const poiCallback = useRef(onPOISelect);
+  poiCallback.current = onPOISelect;
   callback.current = onSelect;
   chooser.current = choose;
   useEffect(() => {
@@ -77,7 +86,7 @@ export default function WorldMap({
     if (!online)
       for (const road of roads) {
         const line = L.polyline(road.points, {
-          color: "#688d78",
+          color: "#8b9da3",
           weight: 2,
           opacity: 0.7,
         }).addTo(group);
@@ -101,21 +110,30 @@ export default function WorldMap({
       marker.on("click", () => callback.current(e));
     }
     for (const p of pois) {
-      const marker = L.circleMarker([p.lat, p.lon], {
-        radius: 6,
-        color: "#7cd4b4",
-        fillOpacity: 0.7,
+      const c = poiCategories[poiCategory(p)];
+      const icon = L.divIcon({
+        className: "resource-marker",
+        iconSize: [38, 44],
+        iconAnchor: [19, 42],
+        html: `<span style="--marker-color:${c.color}">${renderToStaticMarkup(createElement(c.icon, { size: 20, strokeWidth: 2, "aria-hidden": true }))}</span>`,
+      });
+      const marker = L.marker([p.lat, p.lon], {
+        icon,
+        title: p.name,
+        alt: p.name,
+        keyboard: true,
+        bubblingMouseEvents: false,
       }).addTo(group);
       const title = document.createElement("div");
-      title.textContent =
-        p.name + " · " + p.kind + " · disponibilité non confirmée";
-      marker.bindPopup(title);
+      title.textContent = p.name + " · " + p.kind;
+      marker.bindTooltip(title, { direction: "top", offset: [0, -36] });
+      marker.on("click", () => poiCallback.current?.(p));
     }
     if (position) {
       L.circleMarker([position.lat, position.lon], {
         radius: 8,
         color: "#fff",
-        fillColor: "#83ccb5",
+        fillColor: "#213d4b",
         fillOpacity: 1,
         weight: 3,
       }).addTo(group);
@@ -126,8 +144,12 @@ export default function WorldMap({
   }, [events, position, pois, roads, online, compact]);
   useEffect(() => {
     const p = focus || position;
-    if (p) map.current?.setView([p.lat, p.lon], compact ? 5 : focus ? 10 : 14);
-  }, [focus, position, compact]);
+    if (p)
+      map.current?.setView(
+        [p.lat, p.lon],
+        compact ? 5 : focus ? (resourceView ? 16 : 10) : 15,
+      );
+  }, [focus, position, compact, resourceView]);
   return (
     <div className={`map-wrap ${compact ? "compact-map" : ""}`}>
       <div
