@@ -2493,3 +2493,52 @@ h2 {
     font-size: 11px;
   }
 }
+.search-radius {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 17px;
+  padding: 13px 16px;
+  background: #e9eeea;
+  border-radius: 9px;
+  border: 1px solid #d6ded6;
+}
+.search-radius strong {
+  display: block;
+  font-size: 12px;
+}
+.search-radius small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 3px;
+}
+.radius-options {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.radius-options button {
+  font-size: 11px;
+  min-height: 36px;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+.radius-options button[aria-pressed="true"] {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: white;
+}
+@media (max-width: 760px) {
+  .search-radius {
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+  .radius-options {
+    width: 100%;
+  }
+  .radius-options button {
+    flex: 1;
+  }
+}

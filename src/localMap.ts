@@ -58,11 +58,16 @@ export function parseLocalMap(d: any): { pois: POI[]; roads: Road[] } {
         ? nodes.has(e.id)
           ? [nodes.get(e.id)!]
           : []
-        : Array.isArray(e.nodes)
-          ? e.nodes.flatMap((id: number) =>
-              nodes.has(id) ? [nodes.get(id)!] : [],
-            )
-          : [];
+        : Number.isFinite(e.center?.lat) &&
+            Number.isFinite(e.center?.lon) &&
+            Math.abs(e.center.lat) <= 90 &&
+            Math.abs(e.center.lon) <= 180
+          ? [[e.center.lat, e.center.lon]]
+          : Array.isArray(e.nodes)
+            ? e.nodes.flatMap((id: number) =>
+                nodes.has(id) ? [nodes.get(id)!] : [],
+              )
+            : [];
     if (e.tags?.highway && points.length > 1)
       roads.push({ name: String(e.tags.name || ""), points });
     const healthcare = e.tags?.healthcare;
@@ -70,6 +75,7 @@ export function parseLocalMap(d: any): { pois: POI[]; roads: Road[] } {
       e.tags?.emergency === "defibrillator"
         ? "Défibrillateur"
         : names[e.tags?.amenity] ||
+          (healthcare === "pharmacy" ? "Pharmacie" : undefined) ||
           (healthcare === "hospital"
             ? "Hôpital"
             : healthcare === "clinic"
@@ -85,7 +91,7 @@ export function parseLocalMap(d: any): { pois: POI[]; roads: Road[] } {
             ? "aed"
             : e.tags?.amenity === "drinking_water"
               ? "water"
-              : e.tags?.amenity === "pharmacy"
+              : e.tags?.amenity === "pharmacy" || healthcare === "pharmacy"
                 ? "pharmacy"
                 : e.tags?.amenity === "shelter"
                   ? "shelter"

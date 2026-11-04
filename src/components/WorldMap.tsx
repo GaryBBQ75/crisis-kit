@@ -18,6 +18,7 @@ export default function WorldMap({
   choose,
   onPOISelect,
   resourceView = false,
+  searchRadiusKm,
 }: {
   events: Incident[];
   position: Position | null;
@@ -30,6 +31,7 @@ export default function WorldMap({
   choose?: (p: Position) => void;
   onPOISelect?: (p: POI) => void;
   resourceView?: boolean;
+  searchRadiusKm?: number;
 }) {
   const el = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
@@ -129,6 +131,15 @@ export default function WorldMap({
       marker.bindTooltip(title, { direction: "top", offset: [0, -36] });
       marker.on("click", () => poiCallback.current?.(p));
     }
+    if (position && searchRadiusKm)
+      L.circle([position.lat, position.lon], {
+        radius: searchRadiusKm * 1000,
+        color: "#52788b",
+        weight: 1,
+        dashArray: "5 6",
+        fillOpacity: 0.025,
+        interactive: false,
+      }).addTo(group);
     if (position) {
       L.circleMarker([position.lat, position.lon], {
         radius: 8,
@@ -141,15 +152,22 @@ export default function WorldMap({
     return () => {
       m.removeLayer(group);
     };
-  }, [events, position, pois, roads, online, compact]);
+  }, [events, position, pois, roads, online, compact, searchRadiusKm]);
   useEffect(() => {
     const p = focus || position;
+    if (p && !focus && searchRadiusKm) {
+      map.current?.fitBounds(
+        L.latLng(p.lat, p.lon).toBounds(searchRadiusKm * 2000),
+        { padding: [25, 25] },
+      );
+      return;
+    }
     if (p)
       map.current?.setView(
         [p.lat, p.lon],
         compact ? 5 : focus ? (resourceView ? 16 : 10) : 15,
       );
-  }, [focus, position, compact, resourceView]);
+  }, [focus, position, compact, resourceView, searchRadiusKm]);
   return (
     <div className={`map-wrap ${compact ? "compact-map" : ""}`}>
       <div

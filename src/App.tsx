@@ -121,7 +121,7 @@ export default function App() {
             <span className="status-dot" /> Vos préparatifs restent sur cet
             appareil
           </p>
-          <small>Version de travail · 0.3</small>
+          <small>Version de travail · 0.3.1</small>
         </div>
       </aside>
       <div className="workspace">

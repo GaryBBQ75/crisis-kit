@@ -122,3 +122,65 @@ test("local places retain categories and contact metadata, including healthcare-
     small = localBounds({ lat: 48, lon: 2 }, 0.5).split(",").map(Number);
   assert.ok(small[2] - small[0] < big[2] - big[0]);
 });
+import { nearbyQuery, fetchNearby } from "../src/nearby.ts";
+test("wide search supports way and relation centers, without accepting invalid coordinates", () => {
+  const { pois } = parseLocalMap({
+    elements: [
+      {
+        type: "way",
+        id: 11,
+        center: { lat: 49.4, lon: 1.4 },
+        tags: { amenity: "pharmacy", name: "Pharmacie" },
+      },
+      {
+        type: "relation",
+        id: 12,
+        center: { lat: 49.5, lon: 1.5 },
+        tags: { healthcare: "hospital" },
+      },
+      {
+        type: "way",
+        id: 13,
+        center: { lat: 99, lon: 1.5 },
+        tags: { amenity: "hospital" },
+      },
+    ],
+  });
+  assert.equal(pois.length, 2);
+  assert.equal(pois[0].lat, 49.4);
+  assert.equal(pois[1].category, "health");
+  assert.match(
+    nearbyQuery({ lat: 49.37, lon: 1.43 }, 10),
+    /around:10000,49.37,1.43/,
+  );
+  assert.throws(() => nearbyQuery({ lat: 49, lon: 1 }, 100));
+  assert.throws(() => nearbyQuery({ lat: NaN, lon: 1 }, 10));
+});
+test("wide search rejects partial results and falls back; cancellation stops further requests", async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  try {
+    globalThis.fetch = async () => {
+      calls++;
+      return new Response(
+        JSON.stringify(
+          calls === 1
+            ? { elements: [], remark: "runtime timeout" }
+            : { elements: [] },
+        ),
+      );
+    };
+    assert.deepEqual(
+      (await fetchNearby({ lat: 49, lon: 1 }, 10, new AbortController().signal))
+        .elements,
+      [],
+    );
+    assert.equal(calls, 2);
+    const c = new AbortController();
+    c.abort();
+    await assert.rejects(() => fetchNearby({ lat: 49, lon: 1 }, 10, c.signal));
+    assert.equal(calls, 2);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

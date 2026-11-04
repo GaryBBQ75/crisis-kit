@@ -21,6 +21,7 @@ import WorldMap from "../components/WorldMap";
 import { localBounds, parseLocalMap, type POI, type Road } from "../localMap";
 import { dateLabel, distance, type Incident, type Position } from "../feeds";
 import { usePersisted } from "../store";
+import { fetchNearby } from "../nearby";
 import { searchPlaces } from "../placeSearch";
 import {
   poiCategories,
@@ -34,6 +35,8 @@ export type LocalPack = {
   pois: POI[];
   roads?: Road[];
   radiusKm?: number;
+  nearbyRadiusKm?: number;
+  sourceDate?: string;
 };
 export default function MapScreen({
   events,
@@ -84,7 +87,7 @@ export default function MapScreen({
         ? distance(position, a) - distance(position, b)
         : a.name.localeCompare(b.name),
     );
-  async function loadArea(p: Position, force = false) {
+  async function loadArea(p: Position, force = false, requestedRadius = 0) {
     const id = ++version.current;
     request.current?.abort();
     const controller = new AbortController();
@@ -93,7 +96,7 @@ export default function MapScreen({
     msg("Chargement des lieux utiles…");
     setSelected(null);
     try {
-      const key = `area-preview-${p.lat.toFixed(4)}-${p.lon.toFixed(4)}`;
+      const key = `area-preview-v2-${p.lat.toFixed(4)}-${p.lon.toFixed(4)}-${requestedRadius || "auto"}`;
       if (!force) {
         const cache = await get<LocalPack>(key).catch(() => null);
         if (cache && Date.now() - cache.received < 86400000) {
@@ -104,31 +107,67 @@ export default function MapScreen({
           return;
         }
       }
-      let radiusKm = 1;
-      let r: Response;
-      do {
-        r = await fetch(
-          `https://api.openstreetmap.org/api/0.6/map?bbox=${localBounds(p, radiusKm)}`,
-          {
-            headers: { Accept: "application/json" },
-            signal: AbortSignal.any([
-              controller.signal,
-              AbortSignal.timeout(25000),
-            ]),
-          },
-        );
-        if (r.ok) break;
-        if (r.status !== 400 || radiusKm <= 0.25) throw Error();
-        radiusKm /= 2;
-      } while (true);
-      const data = parseLocalMap(await r.json());
-      const next = { position: p, received: Date.now(), radiusKm, ...data };
-      if (id !== version.current) return;
+      let next: LocalPack;
+      if (requestedRadius && current && distance(current.position, p) < 0.1)
+        next = current;
+      else {
+        let radiusKm = 1;
+        let r: Response;
+        do {
+          r = await fetch(
+            `https://api.openstreetmap.org/api/0.6/map?bbox=${localBounds(p, radiusKm)}`,
+            {
+              headers: { Accept: "application/json" },
+              signal: AbortSignal.any([
+                controller.signal,
+                AbortSignal.timeout(25000),
+              ]),
+            },
+          );
+          if (r.ok) break;
+          if (r.status !== 400 || radiusKm <= 0.25) throw Error();
+          radiusKm /= 2;
+        } while (true);
+        next = {
+          position: p,
+          received: Date.now(),
+          radiusKm,
+          ...parseLocalMap(await r.json()),
+        };
+      }
+      if (id !== version.current || controller.signal.aborted) return;
       setCurrent(next);
+      const wider = requestedRadius || (next.pois.length < 3 ? 10 : 0);
+      if (wider) {
+        msg(`Recherche des lieux dans un rayon de ${wider} km…`);
+        try {
+          const data = await fetchNearby(p, wider, controller.signal);
+          if (id !== version.current || controller.signal.aborted) return;
+          const pois = parseLocalMap(data).pois.filter(
+            (poi) => distance(p, poi) <= wider,
+          );
+          next = {
+            ...next,
+            pois,
+            nearbyRadiusKm: wider,
+            sourceDate: data.osm3s?.timestamp_osm_base,
+            received: Date.now(),
+          };
+          setCurrent(next);
+        } catch {
+          if (!controller.signal.aborted && id === version.current)
+            msg(
+              "La recherche élargie est indisponible. Seuls les lieux de la dernière zone chargée sont affichés ; vous pouvez réessayer.",
+            );
+          return;
+        }
+      }
       msg(
-        data.pois.length
-          ? ""
-          : "Aucun lieu utile renseigné dans cette petite zone. Déplacez le point de recherche.",
+        next.pois.length
+          ? wider
+            ? `Recherche élargie : ${next.pois.length} lieux dans un rayon de ${wider} km.`
+            : ""
+          : "Aucun lieu renseigné dans cette zone. Essayez un rayon plus grand ; cela ne signifie pas qu’aucun service n’existe.",
       );
       await set(key, next).catch(() => {});
     } catch {
@@ -146,11 +185,13 @@ export default function MapScreen({
     if (position && online) void loadArea(position);
     else {
       request.current?.abort();
+      version.current++;
       busy(false);
       msg("");
     }
     return () => {
       request.current?.abort();
+      version.current++;
     };
   }, [position?.lat, position?.lon, online]);
   function selectArea(p: Position) {
@@ -218,7 +259,7 @@ export default function MapScreen({
       await set("local-pois-v1", local);
       savePack(local);
       msg(
-        "Pack enregistré : ces lieux et ces rues restent accessibles sans réseau.",
+        "Pack enregistré : les lieux et les rues de la zone locale restent accessibles sans réseau.",
       );
     } catch {
       msg(
@@ -299,8 +340,48 @@ export default function MapScreen({
       )}
       <p className="privacy-caption">
         Recherche : Photon / OpenStreetMap. Choisir un lieu charge sa zone
-        auprès d’OpenStreetMap ; aucun suivi continu de position.
+        auprès d’OpenStreetMap et des services Overpass (Dresel en Europe) ;
+        aucun suivi continu de position.
       </p>
+      {position && (
+        <div className="search-radius">
+          <div>
+            <strong>
+              {local?.nearbyRadiusKm
+                ? `Lieux dans un rayon de ${local.nearbyRadiusKm} km`
+                : `Zone locale : environ ${2 * (local?.radiusKm ?? 1)} × ${2 * (local?.radiusKm ?? 1)} km`}
+            </strong>
+            <small>
+              Élargissez pour trouver les services des communes voisines.
+            </small>
+          </div>
+          <div className="radius-options" aria-label="Rayon de recherche">
+            {[5, 10, 25].map((km) => (
+              <button
+                key={km}
+                disabled={!online || loading}
+                aria-pressed={local?.nearbyRadiusKm === km}
+                onClick={() => {
+                  setLookAt(null);
+                  void loadArea(position, false, km);
+                }}
+              >
+                {km} km
+              </button>
+            ))}
+            <button
+              className="icon-button"
+              aria-label="Actualiser les lieux"
+              disabled={!online || loading}
+              onClick={() =>
+                void loadArea(position, true, local?.nearbyRadiusKm || 0)
+              }
+            >
+              <RefreshCw size={16} />
+            </button>
+          </div>
+        </div>
+      )}
       <div className="poi-filter-bar">
         <button
           className={category === "all" ? "active" : ""}
@@ -361,6 +442,7 @@ export default function MapScreen({
             onPOISelect={selectPOI}
             choose={choosing ? selectArea : undefined}
             resourceView
+            searchRadiusKm={local?.nearbyRadiusKm}
           />
           {loading && (
             <div className="map-loading" role="status">
@@ -421,7 +503,13 @@ export default function MapScreen({
               </div>
               <p className="panel-location">
                 {position?.label || "Aucune zone sélectionnée"}
-                {local && <small>Relevé du {dateLabel(local.received)}</small>}
+                {local && (
+                  <small>
+                    Relevé du {dateLabel(local.received)}
+                    {local.sourceDate &&
+                      ` · source du ${dateLabel(Date.parse(local.sourceDate))}`}
+                  </small>
+                )}
               </p>
               <div className="poi-list">
                 {visible.map((p) => {
@@ -490,7 +578,9 @@ export default function MapScreen({
                 : "Votre carte, même sans réseau"}
             </h3>
             <p>
-              Lieux et tracés simplifiés sur environ{" "}
+              {local?.nearbyRadiusKm
+                ? `Lieux sauvegardés jusqu’à ${local.nearbyRadiusKm} km. Rues simplifiées uniquement sur `
+                : "Lieux et tracés simplifiés sur environ "}
               {2 * (local?.radiusKm ?? 1)} × {2 * (local?.radiusKm ?? 1)} km.
               Sans itinéraires ni disponibilité en direct.
             </p>

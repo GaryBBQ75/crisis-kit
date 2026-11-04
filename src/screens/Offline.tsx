@@ -149,8 +149,8 @@ export default function Offline({
         {message && <p role="status">{message}</p>}
         <p className="small muted">
           La position choisie reste locale. Le téléchargement des lieux transmet
-          uniquement la zone à l’API OpenStreetMap. Les cartes en ligne
-          contactent OpenStreetMap. Aucun compte requis.
+          uniquement la zone aux services OpenStreetMap / Overpass. Les cartes
+          en ligne contactent OpenStreetMap. Aucun compte requis.
         </p>
       </section>
     </>
