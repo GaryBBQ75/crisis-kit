@@ -4,6 +4,7 @@ import { get } from "idb-keyval";
 import { dateLabel, sources } from "../feeds";
 import type { FeedState } from "../useFeeds";
 import type { LocalPack } from "./MapScreen";
+import type { HealthSnapshot } from "../healthFeed";
 import { reflexes } from "../content/reflexes";
 export default function Offline({
   state,
@@ -22,9 +23,15 @@ export default function Offline({
 }) {
   const [ready, installed] = useState(false);
   const [pack, local] = useState<LocalPack | null>(null);
+  const [health, setHealth] = useState<HealthSnapshot | null>(null);
   const [message, msg] = useState("");
   useEffect(() => {
-    get<LocalPack>("local-pois-v1").then((p) => local(p || null));
+    get<LocalPack>("local-pois-v1")
+      .then((p) => local(p || null))
+      .catch(() => {});
+    get<HealthSnapshot>("health-who-v1")
+      .then((p) => setHealth(p || null))
+      .catch(() => {});
     if ("serviceWorker" in navigator)
       navigator.serviceWorker
         .getRegistration()
@@ -104,6 +111,13 @@ export default function Offline({
               ? `${pack.roads.length} tronçons enregistrés · carte partielle`
               : "Aucun tracé enregistré · fond détaillé en ligne uniquement",
             ok: !!pack?.roads?.length,
+          },
+          {
+            title: "Bulletins sanitaires OMS",
+            text: health
+              ? `${health.items.length} titres et dates · ${dateLabel(health.received)} · articles complets en ligne`
+              : "Ouvrez Épidémies dans Situation pour enregistrer les titres",
+            ok: !!health,
           },
           ...sources.map((s) => ({
             title: s.name,

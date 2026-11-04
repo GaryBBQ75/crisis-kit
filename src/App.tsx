@@ -121,7 +121,7 @@ export default function App() {
             <span className="status-dot" /> Vos préparatifs restent sur cet
             appareil
           </p>
-          <small>Version de travail · 0.3.1</small>
+          <small>Version de travail · 0.4</small>
         </div>
       </aside>
       <div className="workspace">
@@ -192,7 +192,13 @@ export default function App() {
             />
           )}
           {screen === "situation" && (
-            <Board state={state} position={position} onSelect={select} />
+            <Board
+              state={state}
+              position={position}
+              onSelect={select}
+              paused={economy || offlineTest}
+              onGuide={() => go("reflexes")}
+            />
           )}
           {screen === "map" && (
             <MapScreen

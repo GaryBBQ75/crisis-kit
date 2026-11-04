@@ -184,3 +184,39 @@ test("wide search rejects partial results and falls back; cancellation stops fur
     globalThis.fetch = original;
   }
 });
+import { parseHealth } from "../src/healthFeed.ts";
+test("WHO bulletins preserve publication dates and build only trusted article links", () => {
+  const result = parseHealth({
+    value: [
+      {
+        Title: "New notice",
+        PublicationDate: "2026-11-02T12:00:00Z",
+        ItemDefaultUrl: "/2026-DON623",
+      },
+      {
+        Title: "Older",
+        PublicationDate: "2026-10-01",
+        ItemDefaultUrl: "/notice-one",
+      },
+      {
+        Title: "Unsafe",
+        PublicationDate: "2026-10-01",
+        ItemDefaultUrl: "//evil.test",
+      },
+      {
+        Title: "Invalid date",
+        PublicationDate: "bad",
+        ItemDefaultUrl: "/valid",
+      },
+    ],
+  });
+  assert.equal(result.length, 2);
+  assert.equal(result[0].title, "New notice");
+  assert.equal(
+    result[0].url,
+    "https://www.who.int/emergencies/disease-outbreak-news/item/2026-DON623",
+  );
+  assert.equal(result[0].time, Date.parse("2026-11-02T12:00:00Z"));
+  assert.throws(() => parseHealth({}));
+  assert.deepEqual(parseHealth({ value: [] }), []);
+});
