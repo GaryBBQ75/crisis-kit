@@ -1,5 +1,5 @@
-import { get, set } from 'idb-keyval';
-import { useEffect, useState } from 'react';
+import { get, set } from "idb-keyval";
+import { useEffect, useState } from "react";
 
 export type Profile = {
   adultes: number;
@@ -13,18 +13,21 @@ export const defaultProfile: Profile = {
   adultes: 1,
   enfants: 0,
   animaux: 0,
-  medicaments: '',
-  allergies: '',
+  medicaments: "",
+  allergies: "",
 };
 
 export type ItemState = { checked: boolean; peremption?: string };
 export type Inventory = Record<string, ItemState>;
 
 export type Family = { rdv: string; contacts: string };
-export const defaultFamily: Family = { rdv: '', contacts: '' };
+export const defaultFamily: Family = { rdv: "", contacts: "" };
 
 /** Valeur stockée dans IndexedDB, sur le téléphone, jamais envoyée en ligne. */
-export function usePersisted<T>(key: string, initial: T): [T, (v: T) => void, boolean] {
+export function usePersisted<T>(
+  key: string,
+  initial: T,
+): [T, (v: T) => void, boolean] {
   const [value, setValue] = useState<T>(initial);
   const [ready, setReady] = useState(false);
 
@@ -36,7 +39,12 @@ export function usePersisted<T>(key: string, initial: T): [T, (v: T) => void, bo
         if (stored !== undefined) setValue(stored as T);
         setReady(true);
       })
-      .catch(() => active && setReady(true));
+      .catch(() => {
+        if (active) {
+          setReady(true);
+          window.dispatchEvent(new CustomEvent("storage-error"));
+        }
+      });
     return () => {
       active = false;
     };
@@ -44,7 +52,9 @@ export function usePersisted<T>(key: string, initial: T): [T, (v: T) => void, bo
 
   const save = (next: T) => {
     setValue(next);
-    set(key, next).catch(() => {});
+    set(key, next).catch(() =>
+      window.dispatchEvent(new CustomEvent("storage-error")),
+    );
   };
 
   return [value, save, ready];

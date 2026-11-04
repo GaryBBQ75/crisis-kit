@@ -1,28 +1,43 @@
-import { useEffect } from 'react';
-import { buildChecklist, pack } from '../pack';
-import { programmerRappels, rappelsDisponibles } from '../reminders';
-import { defaultProfile, usePersisted, type Inventory, type Profile } from '../store';
+import { useEffect } from "react";
+import { buildChecklist, pack } from "../pack";
+import { programmerRappels, rappelsDisponibles } from "../reminders";
+import {
+  defaultProfile,
+  usePersisted,
+  type Inventory,
+  type Profile,
+} from "../store";
 
-function statut(peremption?: string): 'expire' | 'bientot' | null {
+function statut(peremption?: string): "expire" | "bientot" | null {
   if (!peremption) return null;
   const date = new Date(peremption).getTime();
   if (Number.isNaN(date)) return null;
   const maintenant = Date.now();
-  if (date < maintenant) return 'expire';
-  if (date - maintenant < 30 * 24 * 3600 * 1000) return 'bientot';
+  if (date < maintenant) return "expire";
+  if (date - maintenant < 30 * 24 * 3600 * 1000) return "bientot";
   return null;
 }
 
 export default function Checklist() {
-  const [profile, , profileReady] = usePersisted<Profile>('profile', defaultProfile);
-  const [inventory, setInventory, ready] = usePersisted<Inventory>('inventory', {});
+  const [profile, , profileReady] = usePersisted<Profile>(
+    "profile",
+    defaultProfile,
+  );
+  const [inventory, setInventory, ready] = usePersisted<Inventory>(
+    "inventory",
+    {},
+  );
   const items = buildChecklist(pack, profile);
 
   useEffect(() => {
     if (!ready || !profileReady) return;
-    programmerRappels(items.map((i) => ({ id: i.id, nom: i.nom, peremption: inventory[i.id]?.peremption }))).catch(
-      () => {},
-    );
+    programmerRappels(
+      items.map((i) => ({
+        id: i.id,
+        nom: i.nom,
+        peremption: inventory[i.id]?.peremption,
+      })),
+    ).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, profileReady, inventory, profile]);
 
@@ -38,19 +53,22 @@ export default function Checklist() {
   return (
     <>
       <p className="muted">
-        {done} sur {items.length} prêts. Base : {pack.autonomie_heures} h d'autonomie, à ajuster dans Mon foyer.
+        {done} sur {items.length} prêts. Base : {pack.autonomie_heures} h
+        d'autonomie. Personnalisez les personnes et besoins dans Mon foyer.
       </p>
       <ul className="plain">
         {items.map((item) => {
           const state = inventory[item.id];
           const alerte = statut(state?.peremption);
           return (
-            <li key={item.id} className={`item ${alerte ?? ''}`}>
+            <li key={item.id} className={`item ${alerte ?? ""}`}>
               <label className="check">
                 <input
                   type="checkbox"
                   checked={state?.checked ?? false}
-                  onChange={(e) => patch(item.id, { checked: e.target.checked })}
+                  onChange={(e) =>
+                    patch(item.id, { checked: e.target.checked })
+                  }
                 />
                 <span>
                   <strong>{item.nom}</strong>
@@ -61,22 +79,36 @@ export default function Checklist() {
                 Péremption
                 <input
                   type="date"
-                  value={state?.peremption ?? ''}
-                  onChange={(e) => patch(item.id, { peremption: e.target.value })}
+                  value={state?.peremption ?? ""}
+                  onChange={(e) =>
+                    patch(item.id, { peremption: e.target.value })
+                  }
                 />
               </label>
-              {alerte === 'expire' && <p className="flag">Périmé, à renouveler</p>}
-              {alerte === 'bientot' && <p className="flag">À renouveler dans moins de 30 jours</p>}
+              {alerte === "expire" && (
+                <p className="flag">Périmé, à renouveler</p>
+              )}
+              {alerte === "bientot" && (
+                <p className="flag">À renouveler dans moins de 30 jours</p>
+              )}
             </li>
           );
         })}
       </ul>
       {!rappelsDisponibles && (
         <p className="muted small">
-          Les rappels de péremption par notification fonctionnent dans l'app Android et iOS. Ici, les produits à
-          renouveler sont seulement signalés dans la liste.
+          Les rappels de péremption par notification fonctionnent dans l'app
+          Android et iOS. Ici, les produits à renouveler sont seulement signalés
+          dans la liste.
         </p>
       )}
+      <div className="source-link">
+        {pack.sources.map((s) => (
+          <a key={s.url} href={s.url} target="_blank" rel="noreferrer">
+            {s.titre}
+          </a>
+        ))}
+      </div>
       {pack.note && <p className="muted small">{pack.note}</p>}
     </>
   );

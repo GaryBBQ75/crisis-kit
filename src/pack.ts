@@ -1,5 +1,5 @@
-import fr from '../data/packs/FR.fr.json';
-import type { Profile } from './store';
+import fr from "../data/packs/FR.fr.json";
+import type { Profile } from "./store";
 
 export type Provision = {
   id: string;
@@ -14,7 +14,12 @@ export type Pack = {
   langue: string;
   version: string;
   urgences: { nom: string; numero: string }[];
-  alerte: { systeme: string; type: string; installation_requise: boolean; info: string };
+  alerte: {
+    systeme: string;
+    type: string;
+    installation_requise: boolean;
+    info: string;
+  };
   autonomie_heures: number;
   provisions: Provision[];
   sources: { titre: string; url: string }[];
@@ -36,30 +41,50 @@ export function buildChecklist(p: Pack, profile: Profile): ChecklistItem[] {
       return {
         id: prov.id,
         nom: prov.nom,
-        detail: `${total} ${prov.unite ?? ''} pour ${personnes} personne(s) sur ${jours} jours`.replace('  ', ' '),
+        detail:
+          `${total} ${prov.unite ?? ""} pour ${personnes} personne(s) sur ${jours} jours`.replace(
+            "  ",
+            " ",
+          ),
       };
     }
     if (prov.jours) {
-      return { id: prov.id, nom: prov.nom, detail: `${prov.jours} jours pour ${personnes} personne(s)` };
+      return {
+        id: prov.id,
+        nom: prov.nom,
+        detail: `${prov.jours} jours pour ${personnes} personne(s)`,
+      };
     }
-    return { id: prov.id, nom: prov.nom, detail: '' };
+    return { id: prov.id, nom: prov.nom, detail: "" };
   });
 
   if (profile.animaux > 0) {
     items.push({
-      id: 'animaux',
-      nom: 'Nourriture et eau pour les animaux',
+      id: "animaux",
+      nom: "Nourriture et eau pour les animaux",
       detail: `${jours} jours pour ${profile.animaux} animal(aux)`,
     });
   }
   if (profile.enfants > 0) {
-    items.push({ id: 'enfants', nom: 'Besoins des enfants (lait, couches, doudou)', detail: `${profile.enfants} enfant(s)` });
+    items.push({
+      id: "enfants",
+      nom: "Besoins des enfants (lait, couches, doudou)",
+      detail: `${profile.enfants} enfant(s)`,
+    });
   }
   if (profile.medicaments.trim()) {
-    items.push({ id: 'ordonnances', nom: 'Médicaments et ordonnances du foyer', detail: profile.medicaments.trim() });
+    items.push({
+      id: "ordonnances",
+      nom: "Médicaments et ordonnances du foyer",
+      detail: profile.medicaments.trim(),
+    });
   }
   if (profile.allergies.trim()) {
-    items.push({ id: 'allergies', nom: 'Alimentation adaptée aux allergies', detail: profile.allergies.trim() });
+    items.push({
+      id: "allergies",
+      nom: "Alimentation adaptée aux allergies",
+      detail: profile.allergies.trim(),
+    });
   }
   return items;
 }

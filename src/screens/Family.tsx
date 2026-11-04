@@ -1,13 +1,22 @@
-import { pack } from '../pack';
-import { defaultFamily, usePersisted, type Family as FamilyType } from '../store';
+import { pack } from "../pack";
+import {
+  defaultFamily,
+  usePersisted,
+  type Family as FamilyType,
+} from "../store";
 
 export default function Family() {
-  const [family, setFamily, ready] = usePersisted<FamilyType>('family', defaultFamily);
+  const [family, setFamily, ready] = usePersisted<FamilyType>(
+    "family",
+    defaultFamily,
+  );
   if (!ready) return null;
 
   return (
     <>
-      <p className="muted">Convenez du plan à l'avance. Il reste sur ce téléphone.</p>
+      <p className="muted">
+        Convenez du plan à l'avance. Il reste sur ce téléphone.
+      </p>
       <label>
         Point de rendez-vous
         <textarea
@@ -27,7 +36,7 @@ export default function Family() {
         />
       </label>
       <section className="card">
-        <h2>Numéros d'urgence</h2>
+        <h2>Numéros d’urgence · France</h2>
         <ul className="plain">
           {pack.urgences.map((u) => (
             <li key={u.numero}>

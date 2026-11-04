@@ -1,5 +1,5 @@
-import { Capacitor } from '@capacitor/core';
-import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from "@capacitor/core";
+import { LocalNotifications } from "@capacitor/local-notifications";
 
 export type Rappelable = { id: string; nom: string; peremption?: string };
 
@@ -15,7 +15,7 @@ function entier(texte: string): number {
 }
 
 function dateLocale(iso: string): Date | null {
-  const [y, m, d] = iso.split('-').map(Number);
+  const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return null;
   return new Date(y, m - 1, d, 9, 0, 0);
 }
@@ -28,11 +28,13 @@ export async function programmerRappels(items: Rappelable[]): Promise<void> {
   if (!rappelsDisponibles) return;
 
   const permission = await LocalNotifications.requestPermissions();
-  if (permission.display !== 'granted') return;
+  if (permission.display !== "granted") return;
 
   const en_attente = await LocalNotifications.getPending();
   if (en_attente.notifications.length > 0) {
-    await LocalNotifications.cancel({ notifications: en_attente.notifications.map((n) => ({ id: n.id })) });
+    await LocalNotifications.cancel({
+      notifications: en_attente.notifications.map((n) => ({ id: n.id })),
+    });
   }
 
   const maintenant = Date.now();
@@ -46,7 +48,7 @@ export async function programmerRappels(items: Rappelable[]): Promise<void> {
       return [
         {
           id: entier(`${item.id}:${jours}`),
-          title: 'À renouveler bientôt',
+          title: "À renouveler bientôt",
           body: `${item.nom} périme dans ${jours} jours.`,
           schedule: { at },
         },
@@ -54,5 +56,6 @@ export async function programmerRappels(items: Rappelable[]): Promise<void> {
     });
   });
 
-  if (notifications.length > 0) await LocalNotifications.schedule({ notifications });
+  if (notifications.length > 0)
+    await LocalNotifications.schedule({ notifications });
 }
