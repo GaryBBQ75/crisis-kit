@@ -1,3 +1,4 @@
+import { Geolocation } from "@capacitor/geolocation";
 import { useState, useEffect, useRef } from "react";
 import { get, set } from "idb-keyval";
 import {
@@ -228,29 +229,16 @@ export default function MapScreen({
       setSearching(false);
     }
   }
-  function locate() {
-    if (!navigator.geolocation) {
-      msg("Localisation indisponible. Utilisez la recherche ou la carte.");
-      return;
-    }
+  async function locate() {
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
-        selectArea({
-          lat: p.coords.latitude,
-          lon: p.coords.longitude,
-          label: "Autour de ma position",
-        });
-        setLocating(false);
-      },
-      () => {
-        msg(
-          "Position inaccessible. Choisissez une ville ou un point sur la carte.",
-        );
-        setLocating(false);
-      },
-      { timeout: 12000, maximumAge: 60000 },
-    );
+    try {
+      const p = await Geolocation.getCurrentPosition({ timeout: 12000, maximumAge: 60000 });
+      selectArea({ lat: p.coords.latitude, lon: p.coords.longitude, label: "Autour de ma position" });
+    } catch {
+      msg("Position inaccessible. Choisissez une ville ou un point sur la carte.");
+    } finally {
+      setLocating(false);
+    }
   }
   async function save() {
     if (!local) return;

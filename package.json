@@ -10,10 +10,15 @@
     "cap:add:android": "cap add android",
     "cap:add:ios": "cap add ios",
     "cap:sync": "npm run build && cap sync",
-    "test": "node --experimental-strip-types --test tests/*.test.ts"
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "android:sync": "BASE_PATH=/ npm run build && cap sync android",
+    "android:build": "npm run android:sync && cd android && ./gradlew assembleDebug bundleRelease"
   },
   "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.6.0",
+    "@capacitor/geolocation": "^8.2.4",
     "@capacitor/local-notifications": "^8.3.1",
     "idb-keyval": "^6.3.0",
     "leaflet": "^1.9.4",
@@ -32,5 +37,8 @@
     "vite": "^8.3.5",
     "vite-plugin-pwa": "^2.0.0",
     "workbox-window": "^7.4.1"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

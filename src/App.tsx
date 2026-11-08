@@ -1,3 +1,5 @@
+import { Capacitor } from "@capacitor/core";
+import { App as NativeApp } from "@capacitor/app";
 import { useEffect, useState } from "react";
 import {
   Shield,
@@ -67,6 +69,15 @@ export default function App() {
   const feedState = useFeeds(economy || offlineTest);
   const state = { ...feedState, online: feedState.online && !offlineTest };
   const [selected, select] = useState<Incident | null>(null);
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const listener = NativeApp.addListener("backButton", () => {
+      if (selected) select(null);
+      else if (screen !== "home") setScreen("home");
+      else NativeApp.exitApp();
+    });
+    return () => { void listener.then((handle) => handle.remove()); };
+  }, [screen, selected]);
   const [mapCategory, setMapCategory] = useState<POICategory | "all">("all");
   const [focus, setFocus] = useState<Position | null>(null);
   function go(s: Screen) {

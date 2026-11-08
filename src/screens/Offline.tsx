@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { useEffect, useState } from "react";
 import { Download, Check, WifiOff, Database, Leaf } from "lucide-react";
 import { get } from "idb-keyval";
@@ -21,7 +22,7 @@ export default function Offline({
   setEconomy: (v: boolean) => void;
   goMap: () => void;
 }) {
-  const [ready, installed] = useState(false);
+  const [ready, installed] = useState(Capacitor.isNativePlatform());
   const [pack, local] = useState<LocalPack | null>(null);
   const [health, setHealth] = useState<HealthSnapshot | null>(null);
   const [message, msg] = useState("");
@@ -32,7 +33,7 @@ export default function Offline({
     get<HealthSnapshot>("health-who-v1")
       .then((p) => setHealth(p || null))
       .catch(() => {});
-    if ("serviceWorker" in navigator)
+    if (!Capacitor.isNativePlatform() && "serviceWorker" in navigator)
       navigator.serviceWorker
         .getRegistration()
         .then((r) => installed(!!r?.active));
@@ -61,18 +62,17 @@ export default function Offline({
       </div>
       <section className="hero-card">
         <h3>
-          {ready
+          {Capacitor.isNativePlatform() ? "Application embarquée sur ce téléphone" : ready
             ? "Application installée en cache"
             : "Préparation du cache de l’application"}
         </h3>
         <p>
-          {ready
+          {Capacitor.isNativePlatform() ? "Les écrans et guides sont inclus dans l’application Android et accessibles dès le premier lancement, même sans réseau. Les cartes locales et relevés doivent être téléchargés au préalable." : ready
             ? "Les écrans et guides sont enregistrés par le navigateur. Testez leur ouverture en mode avion avant d’en dépendre."
             : "Ouvrez cette application en ligne et attendez son chargement complet. Le mode hors ligne nécessite un premier accès réussi."}
         </p>
         <p className="small">
-          Le navigateur peut supprimer ses données. Une coupure réseau n’empêche
-          pas leur lecture, mais le téléphone doit rester alimenté.
+          Effacer les données ou désinstaller l’application supprime les éléments enregistrés. Le téléphone doit rester alimenté.
         </p>
       </section>
       <section className="card">

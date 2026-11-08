@@ -4,6 +4,13 @@ dist/
 .env.*
 .DS_Store
 *.log
-android/
 ios/
 *.pmtiles
+
+artifacts/
+*.jks
+*.keystore
+signing.properties
+.release-secrets/
+
+.build-tools/
